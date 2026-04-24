@@ -1,0 +1,19 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.LostFound" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- 主色调 -->
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorPrimaryVariant">@color/brand_primary_dark</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <!-- 辅助色 -->
+        <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <!-- 错误色 -->
+        <item name="colorError">@color/brand_accent</item>
+
+        <!-- 窗口背景 -->
+        <item name="android:windowBackground">@color/surface_background</item>
+    </style>
+
+    <style name="Theme.LostFound" parent="Base.Theme.LostFound" />
+</resources>

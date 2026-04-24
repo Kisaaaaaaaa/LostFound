@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主色调：采用更有活力且深浅适中的蓝色 -->
+    <color name="brand_primary">#3498DB</color>
+    <color name="brand_primary_dark">#2980B9</color>
+    <color name="brand_secondary">#2ECC71</color>
+    <color name="brand_accent">#E74C3C</color>
+
+    <!-- 背景与中性色 -->
+    <color name="surface_background">#F8F9FA</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="divider_soft">#ECF0F1</color>
+
+    <!-- 文本色：增加对比度差异 -->
+    <color name="text_title">#2D3436</color>
+    <color name="text_body">#636E72</color>
+    <color name="text_muted">#B2BEC3</color>
+
+    <!-- 业务状态背景 -->
+    <color name="status_pending_bg">#FFF9C4</color>
+    <color name="status_success_bg">#C8E6C9</color>
+    <color name="status_error_bg">#FFCDD2</color>
+</resources>
