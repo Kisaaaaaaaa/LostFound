@@ -2,6 +2,8 @@
     <string name="app_name">失物招领</string>
     <string-array name="categories_filter">
         <item>全部</item>
+        <item>进行中</item>
+        <item>已解决</item>
         <item>电子</item>
         <item>证件</item>
         <item>日常</item>

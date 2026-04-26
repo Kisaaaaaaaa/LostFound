@@ -4,8 +4,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
@@ -48,7 +50,7 @@ public class PostDetailActivity extends AppCompatActivity {
         binding.fabChat.setOnClickListener(v -> {
             if (currentPost != null) {
                 if (currentPost.publisherId == currentUserId) {
-                    android.widget.Toast.makeText(this, "这是您自己发布的物品", android.widget.Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "这是您自己发布的物品", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 
@@ -65,6 +67,46 @@ public class PostDetailActivity extends AppCompatActivity {
                 }).start();
             }
         });
+
+        // 编辑按钮
+        binding.btnEditPost.setOnClickListener(v -> {
+            Intent intent = new Intent(this, PostActivity.class);
+            intent.putExtra("edit_post_id", currentPost.postId);
+            startActivity(intent);
+        });
+
+        // 更新状态按钮
+        binding.btnUpdateStatus.setOnClickListener(v -> {
+            showUpdateStatusDialog();
+        });
+    }
+
+    private void showUpdateStatusDialog() {
+        String[] options = {"标记为已解决", "标记为未解决"};
+        new AlertDialog.Builder(this)
+                .setTitle("更新状态")
+                .setItems(options, (dialog, which) -> {
+                    boolean isResolved = (which == 0);
+                    updatePostResolvedStatus(isResolved);
+                })
+                .show();
+    }
+
+    private void updatePostResolvedStatus(boolean isResolved) {
+        new Thread(() -> {
+            int result = AppDatabase.getDatabase(this).itemPostDao().updateResolvedState(currentPost.postId, isResolved);
+            if (result > 0) {
+                runOnUiThread(() -> {
+                    currentPost.isResolved = isResolved;
+                    Toast.makeText(this, "状态更新成功", Toast.LENGTH_SHORT).show();
+                    updateStatusButtonText(isResolved);
+                });
+            }
+        }).start();
+    }
+
+    private void updateStatusButtonText(boolean isResolved) {
+        binding.btnUpdateStatus.setText(isResolved ? "标记为未解决" : "标记为已解决");
     }
 
     private void loadPostDetails(int postId) {
@@ -90,9 +132,14 @@ public class PostDetailActivity extends AppCompatActivity {
         
         binding.collapsingToolbar.setTitle(post.type == 0 ? "寻物详情" : "招领详情");
         
-        // 如果是自己发布的，隐藏私聊按钮
+        // 如果是自己发布的，显示编辑/状态按钮，隐藏私聊按钮
         if (post.publisherId == currentUserId) {
             binding.fabChat.setVisibility(View.GONE);
+            binding.layoutOwnerActions.setVisibility(View.VISIBLE);
+            updateStatusButtonText(post.isResolved);
+        } else {
+            binding.fabChat.setVisibility(View.VISIBLE);
+            binding.layoutOwnerActions.setVisibility(View.GONE);
         }
     }
 

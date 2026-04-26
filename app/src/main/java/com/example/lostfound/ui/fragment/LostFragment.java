@@ -31,7 +31,7 @@ public class LostFragment extends Fragment {
     private static final int TYPE_LOST = 0;
     
     private List<ItemPost> allPosts = new ArrayList<>();
-    private String currentCategory = "全部";
+    private String currentFilter = "全部";
     private String currentKeyword = "";
 
     @Nullable
@@ -58,7 +58,6 @@ public class LostFragment extends Fragment {
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerView.setAdapter(adapter);
 
-        // 设置点击事件跳转到详情页
         adapter.setOnItemClickListener(post -> {
             Intent intent = new Intent(getContext(), PostDetailActivity.class);
             intent.putExtra("post_id", post.postId);
@@ -70,7 +69,7 @@ public class LostFragment extends Fragment {
         binding.spinnerCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                currentCategory = parent.getItemAtPosition(position).toString();
+                currentFilter = parent.getItemAtPosition(position).toString();
                 filterPosts();
             }
 
@@ -105,16 +104,36 @@ public class LostFragment extends Fragment {
     private void filterPosts() {
         List<ItemPost> filteredList = new ArrayList<>();
         for (ItemPost post : allPosts) {
-            boolean matchesCategory = currentCategory.equals("全部") || post.getCategory().equals(currentCategory);
             boolean matchesKeyword = currentKeyword.isEmpty() || 
                     post.getTitle().toLowerCase().contains(currentKeyword.toLowerCase()) ||
                     post.getDescription().toLowerCase().contains(currentKeyword.toLowerCase());
             
-            if (matchesCategory && matchesKeyword) {
+            boolean matchesFilter;
+            if (currentFilter.equals("全部")) {
+                matchesFilter = true;
+            } else if (currentFilter.equals("进行中")) {
+                matchesFilter = !post.isResolved;
+            } else if (currentFilter.equals("已解决")) {
+                matchesFilter = post.isResolved;
+            } else {
+                // 按分类过滤
+                matchesFilter = post.getCategory().equals(currentFilter);
+            }
+            
+            if (matchesFilter && matchesKeyword) {
                 filteredList.add(post);
             }
         }
+        
         adapter.setPosts(filteredList);
+        
+        if (filteredList.isEmpty()) {
+            binding.recyclerView.setVisibility(View.GONE);
+            binding.layoutEmpty.setVisibility(View.VISIBLE);
+        } else {
+            binding.recyclerView.setVisibility(View.VISIBLE);
+            binding.layoutEmpty.setVisibility(View.GONE);
+        }
     }
 
     @Override

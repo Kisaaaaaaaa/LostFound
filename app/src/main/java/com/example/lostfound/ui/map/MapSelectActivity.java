@@ -2,7 +2,9 @@ package com.example.lostfound.ui.map;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
@@ -15,13 +17,11 @@ import androidx.core.content.ContextCompat;
 
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
-import com.amap.api.maps.MapsInitializer;
 import com.amap.api.maps.model.CameraPosition;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.services.core.AMapException;
 import com.amap.api.services.core.LatLonPoint;
-import com.amap.api.services.core.ServiceSettings;
 import com.amap.api.services.geocoder.GeocodeQuery;
 import com.amap.api.services.geocoder.GeocodeResult;
 import com.amap.api.services.geocoder.GeocodeSearch;
@@ -29,6 +29,9 @@ import com.amap.api.services.geocoder.RegeocodeAddress;
 import com.amap.api.services.geocoder.RegeocodeQuery;
 import com.amap.api.services.geocoder.RegeocodeResult;
 import com.example.lostfound.databinding.ActivityMapSelectBinding;
+
+import java.security.MessageDigest;
+import java.util.Locale;
 
 public class MapSelectActivity extends AppCompatActivity implements GeocodeSearch.OnGeocodeSearchListener {
 
@@ -46,13 +49,11 @@ public class MapSelectActivity extends AppCompatActivity implements GeocodeSearc
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 隐私合规
-        MapsInitializer.updatePrivacyShow(this, true, true);
-        MapsInitializer.updatePrivacyAgree(this, true);
-        ServiceSettings.updatePrivacyShow(this, true, true);
-        ServiceSettings.updatePrivacyAgree(this, true);
-
         super.onCreate(savedInstanceState);
+        
+        // 打印调试信息，帮助排查 1804 错误
+        printDebugInfo();
+
         binding = ActivityMapSelectBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -78,7 +79,7 @@ public class MapSelectActivity extends AppCompatActivity implements GeocodeSearc
         });
 
         binding.btnConfirm.setOnClickListener(v -> {
-            if (selectedLatLng != null && selectedAddress != null && !selectedAddress.contains("正在")) {
+            if (selectedLatLng != null && selectedAddress != null && !selectedAddress.contains("正在") && !selectedAddress.contains("失败")) {
                 Intent intent = new Intent();
                 intent.putExtra("lat", selectedLatLng.latitude);
                 intent.putExtra("lng", selectedLatLng.longitude);
@@ -91,6 +92,26 @@ public class MapSelectActivity extends AppCompatActivity implements GeocodeSearc
         });
 
         checkPermission();
+    }
+
+    private void printDebugInfo() {
+        try {
+            Log.d(TAG, "Checking PackageName: " + getPackageName());
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), PackageManager.GET_SIGNATURES);
+            for (Signature signature : info.signatures) {
+                MessageDigest md = MessageDigest.getInstance("SHA1");
+                md.update(signature.toByteArray());
+                byte[] digest = md.digest();
+                StringBuilder toHex = new StringBuilder();
+                for (byte b : digest) {
+                    toHex.append(String.format(Locale.US, "%02X:", b));
+                }
+                String sha1 = toHex.substring(0, toHex.length() - 1);
+                Log.d(TAG, "REAL RUNTIME SHA1 (Update this in AMap Console): " + sha1);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Debug info error", e);
+        }
     }
 
     private void searchAddress(String keyword) {
@@ -126,7 +147,6 @@ public class MapSelectActivity extends AppCompatActivity implements GeocodeSearc
                     isFirstLocation = false;
                     LatLng targetLatLng;
                     
-                    // 静默处理无效坐标
                     if (Math.abs(lat) < 0.001 && Math.abs(lng) < 0.001) {
                         targetLatLng = DEFAULT_LATLNG;
                     } else {
@@ -172,6 +192,12 @@ public class MapSelectActivity extends AppCompatActivity implements GeocodeSearc
             }
             selectedAddress = formatAddr;
             runOnUiThread(() -> binding.tvAddress.setText(selectedAddress));
+        } else {
+            Log.e(TAG, "逆地理编码失败，错误码: " + rCode);
+            runOnUiThread(() -> {
+                binding.tvAddress.setText("解析失败(" + rCode + ")，请检查Key配置");
+                selectedAddress = null;
+            });
         }
     }
 
@@ -185,7 +211,8 @@ public class MapSelectActivity extends AppCompatActivity implements GeocodeSearc
             selectedAddress = result.getGeocodeAddressList().get(0).getFormatAddress();
             runOnUiThread(() -> binding.tvAddress.setText(selectedAddress));
         } else {
-            Toast.makeText(this, "未搜索到相关地址", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "地理编码失败，错误码: " + rCode);
+            Toast.makeText(this, "地址搜索失败(" + rCode + ")", Toast.LENGTH_SHORT).show();
         }
     }
 

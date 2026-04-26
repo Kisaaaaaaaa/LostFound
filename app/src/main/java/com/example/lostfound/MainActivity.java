@@ -92,11 +92,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupWorkManager() {
-        // 1. 立即执行一次匹配检查 (用户登录/进入主页时)
+        // 核心修复：强制取消所有旧的冗余任务名，防止重复发送通知
+        WorkManager.getInstance(this).cancelUniqueWork("SubscriptionWork");
+        WorkManager.getInstance(this).cancelAllWorkByTag("SubscriptionWorker");
+
+        // 1. 立即执行一次匹配检查
         OneTimeWorkRequest immediateWorkRequest = new OneTimeWorkRequest.Builder(ItemMatchWorker.class).build();
         WorkManager.getInstance(this).enqueue(immediateWorkRequest);
 
-        // 2. 配置每 15 分钟运行一次的定期匹配任务
+        // 2. 配置定期的匹配任务
         PeriodicWorkRequest matchWorkRequest = new PeriodicWorkRequest.Builder(
                 ItemMatchWorker.class, 15, TimeUnit.MINUTES)
                 .build();

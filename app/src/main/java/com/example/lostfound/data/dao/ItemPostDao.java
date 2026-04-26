@@ -30,10 +30,11 @@ public interface ItemPostDao {
     @Query("SELECT * FROM item_posts WHERE postId = :postId LIMIT 1")
     ItemPost getPostByIdSync(int postId);
 
-    @Query("SELECT * FROM item_posts WHERE type = :type AND status = 1 AND isResolved = 0 ORDER BY timestamp DESC")
+    // 移除 isResolved = 0，让所有状态的帖子都能查询到
+    @Query("SELECT * FROM item_posts WHERE type = :type AND status = 1 ORDER BY isResolved ASC, timestamp DESC")
     LiveData<List<ItemPost>> getPostsByType(int type);
 
-    @Query("SELECT * FROM item_posts WHERE type = :type AND category = :category AND status = 1 AND isResolved = 0 ORDER BY timestamp DESC")
+    @Query("SELECT * FROM item_posts WHERE type = :type AND category = :category AND status = 1 ORDER BY isResolved ASC, timestamp DESC")
     LiveData<List<ItemPost>> getPostsByTypeAndCategory(int type, String category);
 
     @Query("SELECT * FROM item_posts WHERE publisherId = :publisherId ORDER BY timestamp DESC")
@@ -54,17 +55,18 @@ public interface ItemPostDao {
     @Query("SELECT COUNT(*) FROM item_posts WHERE isResolved = 1")
     LiveData<Integer> getTotalResolvedCount();
     
-    // 新增：统计待审核数量
     @Query("SELECT COUNT(*) FROM item_posts WHERE status = 0")
     LiveData<Integer> getPendingAuditCount();
 
-    @Query("SELECT * FROM item_posts WHERE (title LIKE '%' || :keyword || '%' OR description LIKE '%' || :keyword || '%') AND status = 1 AND isResolved = 0 ORDER BY timestamp DESC")
+    @Query("SELECT * FROM item_posts WHERE (title LIKE '%' || :keyword || '%' OR description LIKE '%' || :keyword || '%') AND status = 1 ORDER BY timestamp DESC")
     LiveData<List<ItemPost>> searchPosts(String keyword);
 
-    @Query("SELECT * FROM item_posts WHERE (title LIKE '%' || :keyword || '%' OR description LIKE '%' || :keyword || '%') AND timestamp > :sinceTime AND status = 1 AND isResolved = 0")
+    // 修复编译错误 1：重新添加根据关键词和时间查询新帖的方法
+    @Query("SELECT * FROM item_posts WHERE (title LIKE '%' || :keyword || '%' OR description LIKE '%' || :keyword || '%') AND timestamp > :sinceTime AND status = 1 ORDER BY timestamp ASC")
     List<ItemPost> searchNewPostsByKeywordSync(String keyword, long sinceTime);
 
-    @Query("SELECT * FROM item_posts WHERE timestamp > :sinceTime AND status = 1 AND isResolved = 0 ORDER BY timestamp ASC")
+    // 修复编译错误 2：重新添加订阅功能所需的查询方法
+    @Query("SELECT * FROM item_posts WHERE timestamp > :sinceTime AND status = 1 ORDER BY timestamp ASC")
     List<ItemPost> getPostsAfter(long sinceTime);
 
     @Query("UPDATE item_posts SET isResolved = :resolved WHERE postId = :postId")
